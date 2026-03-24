@@ -23,8 +23,8 @@ A anime streaming API built for scale. Kuhi provides a clean REST interface to s
 
 1. Clone the repository:
 ```bash
-git clone 
-cd Kuhi
+git clone https://github.com/aryaniiil/kuhi-anime-api
+cd Kuhi-anime-api
 ```
 
 2. Install dependencies:
