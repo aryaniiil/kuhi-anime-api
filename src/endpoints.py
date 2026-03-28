@@ -6,7 +6,7 @@ import base64
 from src.queries import MEDIA_LIST_FIELDS, MEDIA_FULL_FIELDS
 from src.parser import proxy_deep_images, inject_source_slugs, encode_pipe_request, decode_pipe_response
 from src.extractor import anilist_query, fetch_raw_episodes
-from src.config import MIRURO_PIPE_URL, HEADERS
+from src.config import iter_miruro_pipe_targets
 
 # creating router instance to handle api routes
 router = APIRouter()
@@ -479,12 +479,15 @@ async def get_sources(
     encoded_req = encode_pipe_request(payload)
     
     async with httpx.AsyncClient(timeout=15.0) as client:
-        pipe_target = f"{MIRURO_PIPE_URL}?e={encoded_req}"
-        print(f"\n[KUHI API] extracting stream sources pipe targeting:", pipe_target)
-        res = await client.get(pipe_target, headers=HEADERS)
-        if res.status_code != 200:
-            raise HTTPException(status_code=res.status_code, detail="fetching pipe failed real bad")
-        return proxy_deep_images(decode_pipe_response(res.text.strip()))
+        last_status = None
+        for pipe_target, headers in iter_miruro_pipe_targets(encoded_req):
+            print(f"\n[KUHI API] extracting stream sources pipe targeting:", pipe_target)
+            res = await client.get(pipe_target, headers=headers)
+            last_status = res.status_code
+            if res.status_code == 200:
+                return proxy_deep_images(decode_pipe_response(res.text.strip()))
+
+        raise HTTPException(status_code=last_status or 502, detail="fetching pipe failed real bad")
 
 @router.get("/extract/{query}")
 async def extract_simple(query: str, episode: int = Query(1, alias="e")):
@@ -607,15 +610,15 @@ async def extract_simple(query: str, episode: int = Query(1, alias="e")):
             encoded_req = encode_pipe_request(payload)
             
             async with httpx.AsyncClient(timeout=15.0) as client:
-                pipe_target = f"{MIRURO_PIPE_URL}?e={encoded_req}"
-                print(f"\n[KUHI API] trying provider {try_provider}: {pipe_target}")
-                res = await client.get(pipe_target, headers=HEADERS)
-                
-                if res.status_code == 200:
-                    result = decode_pipe_response(res.text.strip())
-                    print(f"[KUHI API] success with provider {try_provider}")
-                    return proxy_deep_images(result)
-                else:
+                for pipe_target, headers in iter_miruro_pipe_targets(encoded_req):
+                    print(f"\n[KUHI API] trying provider {try_provider}: {pipe_target}")
+                    res = await client.get(pipe_target, headers=headers)
+
+                    if res.status_code == 200:
+                        result = decode_pipe_response(res.text.strip())
+                        print(f"[KUHI API] success with provider {try_provider}")
+                        return proxy_deep_images(result)
+
                     last_error = f"{try_provider} failed: {res.status_code}"
                     print(f"[KUHI API] {last_error}")
         except Exception as e:
