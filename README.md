@@ -23,18 +23,18 @@ A anime streaming API built for scale. Kuhi provides a clean REST interface to s
 
 1. Clone the repository:
 ```bash
-git clone 
-cd Kuhi
+git clone https://github.com/aryaniiil/kuhi-anime-api
+cd Kuhi-anime-api
 ```
 
 2. Install dependencies:
 ```bash
-pip install fastapi uvicorn httpx
+python -m pip install -r requirements.txt
 ```
 
 3. Run the server:
 ```bash
-uvicorn src.main:app --reload --port 8000
+uvicorn api:app --reload
 ```
 
 4. Access the API:
@@ -377,7 +377,7 @@ Edit `src/config.py` to customize:
 
 Run in development mode with auto-reload:
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn api:app --reload
 ```
 
 ## Notes
